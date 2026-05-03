@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vedic Chart Extractor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f7f5f0;--surface:#fff;--border:#e2ddd6;--border-strong:#c8c0b5;
+  --text:#1a1714;--text-muted:#6b6460;--text-hint:#a09890;
+  --purple-dark:#26215C;--purple-mid:#3C3489;--purple:#534AB7;
+  --purple-light:#EEEDFE;--purple-text:#3C3489;
+  --red-bg:#FCEBEB;--red-text:#791F1F;--red-border:#F7C1C1;
+}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;}
+.page-wrap{max-width:700px;margin:0 auto;padding:2rem 1.25rem 4rem;}
+.header{text-align:center;margin-bottom:2rem;}
+.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-hint);margin-bottom:6px;}
+h1{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:400;line-height:1.15;}
+h1 em{color:var(--purple);font-style:italic;}
+.rule{width:36px;height:1px;background:var(--border-strong);margin:12px auto 10px;}
+.header-sub{font-size:13px;color:var(--text-muted);}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.4rem 1.5rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.section-label{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-hint);margin-bottom:1rem;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);}
+input[type=text]{height:40px;padding:0 12px;border:0.5px solid var(--border-strong);border-radius:9px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;}
+input[type=text]:focus{border-color:var(--purple);background:#fff;}
+input[type=number]{height:34px;width:68px;padding:0 8px;border:0.5px solid var(--border-strong);border-radius:8px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;}
+input[type=number]:focus{border-color:var(--purple);background:#fff;}
+select{height:34px;padding:0 8px;border:0.5px solid var(--border-strong);border-radius:8px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer;}
+select:focus{border-color:var(--purple);}
+.gender-row{display:flex;gap:8px;}
+.toggle-btn{flex:1;height:40px;border:0.5px solid var(--border-strong);background:var(--bg);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.toggle-btn.active{border-color:var(--purple);background:var(--purple-light);color:var(--purple-text);font-weight:500;}
+.chart-grid{display:flex;flex-wrap:wrap;gap:7px;}
+.type-btn{padding:6px 13px;border:0.5px solid var(--border-strong);border-radius:20px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.type-btn.active{border-color:var(--purple);background:var(--purple-light);color:var(--purple-text);font-weight:500;}
+
+/* House rows */
+.houses-grid{display:flex;flex-direction:column;gap:8px;}
+.house-row{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.house-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.house-header:hover{background:#faf9f7;}
+.house-badge{width:34px;height:34px;border-radius:8px;background:var(--purple-light);color:var(--purple-text);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.house-badge.lagna{background:var(--purple-dark);color:#CECBF6;}
+.house-title{font-size:13px;font-weight:500;color:var(--text);flex:1;}
+.house-preview{font-size:11px;color:var(--text-hint);font-style:italic;text-align:right;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chevron{font-size:9px;color:var(--text-hint);transition:transform .2s;flex-shrink:0;}
+.chevron.open{transform:rotate(90deg);}
+.house-body{padding:12px 14px 14px;display:none;border-top:0.5px solid var(--border);}
+.house-body.open{display:block;}
+
+/* Lagna */
+.lagna-fields{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.lagna-fields label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+
+/* Planet entries */
+.planet-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.planet-entry{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 0;border-bottom:0.5px solid var(--border);}
+.planet-entry:last-child{border-bottom:none;}
+.p-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);min-width:46px;}
+.retro-wrap{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted);cursor:pointer;}
+.retro-wrap input{width:14px;height:14px;accent-color:var(--purple);cursor:pointer;}
+.rm-btn{width:26px;height:26px;border:none;background:none;color:var(--text-hint);cursor:pointer;font-size:17px;line-height:1;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0;}
+.rm-btn:hover{background:var(--red-bg);color:var(--red-text);}
+.add-btn{padding:5px 14px;border:0.5px dashed var(--border-strong);border-radius:8px;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.add-btn:hover{border-color:var(--purple);color:var(--purple-text);}
+
+/* Generate button */
+.gen-btn{width:100%;height:50px;background:var(--purple-dark);color:var(--purple-light);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;letter-spacing:.06em;cursor:pointer;transition:all .2s;margin-top:.75rem;display:flex;align-items:center;justify-content:center;gap:8px;}
+.gen-btn:hover{background:var(--purple-mid);}
+
+/* Result */
+.result-card{display:none;background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-top:1rem;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.result-header{background:var(--purple-dark);padding:1rem 1.4rem;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.result-meta{display:flex;flex-direction:column;gap:3px;}
+.r-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#AFA9EC;}
+.r-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#CECBF6;font-style:italic;}
+.copy-btn{padding:6px 14px;background:transparent;border:0.5px solid #534AB7;border-radius:8px;color:#AFA9EC;font-size:11px;letter-spacing:.07em;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.copy-btn:hover{background:var(--purple-mid);color:var(--purple-light);}
+.result-body{padding:1.4rem 1.5rem;}
+.result-text{font-family:'Cormorant Garamond',serif;font-size:1.1rem;line-height:2;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.chart-ref{margin-top:1rem;padding-top:1rem;border-top:0.5px solid var(--border);font-size:12px;color:var(--text-hint);font-style:italic;}
+
+/* Ref table toggle */
+.ref-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-hint);letter-spacing:.05em;margin-top:1.5rem;user-select:none;}
+.ref-toggle svg{transition:transform .2s;flex-shrink:0;}
+.ref-toggle.open svg{transform:rotate(90deg);}
+.ref-wrap{display:none;margin-top:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.ref-wrap.open{display:block;}
+.ref-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ref-table th{background:var(--purple-dark);color:#CECBF6;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding:9px 14px;text-align:left;}
+.ref-table td{padding:8px 14px;border-bottom:0.5px solid var(--border);color:var(--text-muted);}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:nth-child(even) td{background:var(--bg);}
+.d-code{font-weight:500;color:var(--purple-text);font-size:11px;}
+
+@media(max-width:500px){
+  .row-2{grid-template-columns:1fr;}
+  h1{font-size:1.8rem;}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="eyebrow">Vedic Astrology Tool</div>
+    <h1>Chart <em>Extractor</em></h1>
+    <div class="rule"></div>
+    <div class="header-sub">Enter house data manually · 100% accurate text extraction</div>
+  </div>
+
+  <!-- Person details -->
+  <img src="Example_guide.png" alt="Example Guide" style="width:100%; max-width:600px; margin-bottom:1rem;">
+  <div class="card">
+    <div class="section-label">Person details</div>
+    <div class="row-2">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="name-input" placeholder="Your Name"/>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <div class="gender-row">
+          <button class="toggle-btn active" data-g="male" onclick="setGender(this)">Male</button>
+          <button class="toggle-btn" data-g="female" onclick="setGender(this)">Female</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Chart / Varga</label>
+      <div class="chart-grid">
+        <button class="type-btn active" data-c="D1" onclick="setChart(this)">D1 – Rashi</button>
+        <button class="type-btn" data-c="D2" onclick="setChart(this)">D2 – Hora</button>
+        <button class="type-btn" data-c="D3" onclick="setChart(this)">D3 – Dreshkana</button>
+        <button class="type-btn" data-c="D4" onclick="setChart(this)">D4 – Chaturthamsa</button>
+        <button class="type-btn" data-c="D7" onclick="setChart(this)">D7 – Saptamsa</button>
+        <button class="type-btn" data-c="D9" onclick="setChart(this)">D9 – Navamsa</button>
+        <button class="type-btn" data-c="D10" onclick="setChart(this)">D10 – Dasamsa</button>
+        <button class="type-btn" data-c="D12" onclick="setChart(this)">D12 – Dvadasamsa</button>
+        <button class="type-btn" data-c="D16" onclick="setChart(this)">D16 – Shodasamsa</button>
+        <button class="type-btn" data-c="D20" onclick="setChart(this)">D20 – Vimsamsa</button>
+        <button class="type-btn" data-c="D24" onclick="setChart(this)">D24 – ChaturVimsamsa</button>
+        <button class="type-btn" data-c="D27" onclick="setChart(this)">D27 – SaptaVimsamsa</button>
+        <button class="type-btn" data-c="D30" onclick="setChart(this)">D30 – Trimsamsa</button>
+        <button class="type-btn" data-c="D40" onclick="setChart(this)">D40 – KhaVedamsa</button>
+        <button class="type-btn" data-c="D45" onclick="setChart(this)">D45 – AkshaVedamsa</button>
+        <button class="type-btn" data-c="D60" onclick="setChart(this)">D60 – Shastamsa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- House data entry -->
+  <div class="card">
+    <div class="section-label">Enter chart data — click each house to expand</div>
+    <div class="houses-grid" id="houses-grid"></div>
+  </div>
+
+  <button class="gen-btn" onclick="generateOutput()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Generate Chart Text
+  </button>
+
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="result-meta">
+        <div class="r-eyebrow">Extraction complete</div>
+        <div class="r-title" id="result-title">Chart</div>
+      </div>
+      <button class="copy-btn" onclick="copyResult()">Copy text</button>
+    </div>
+    <div class="result-body">
+      <div class="result-text" id="result-text"></div>
+      <div class="chart-ref" id="chart-ref"></div>
+    </div>
+  </div>
+
+  <div class="ref-toggle" id="ref-toggle" onclick="toggleRef()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    Divisional chart reference
+  </div>
+  <div class="ref-wrap" id="ref-wrap">
+    <table class="ref-table">
+      <thead><tr><th>Chart</th><th>Hindi name</th><th>Area of influence</th></tr></thead>
+      <tbody>
+        <tr><td class="d-code">D1</td><td>Rasi</td><td>Body, physical matters and all about self</td></tr>
+        <tr><td class="d-code">D2</td><td>Hora</td><td>Wealth and family life</td></tr>
+        <tr><td class="d-code">D3</td><td>Dreshkana</td><td>Siblings, study</td></tr>
+        <tr><td class="d-code">D4</td><td>Chaturthamsa</td><td>Home life and property</td></tr>
+        <tr><td class="d-code">D7</td><td>Saptamsa</td><td>Children / progeny</td></tr>
+        <tr><td class="d-code">D9</td><td>Navamsa</td><td>Wife, dharma and life rewards</td></tr>
+        <tr><td class="d-code">D10</td><td>Dasamsa</td><td>All about career and profession</td></tr>
+        <tr><td class="d-code">D12</td><td>Dvadasamsa</td><td>Parents and all about them</td></tr>
+        <tr><td class="d-code">D16</td><td>Shodasamsa</td><td>Vehicles, travelling and other comforts</td></tr>
+        <tr><td class="d-code">D20</td><td>Vimsamsa</td><td>Spiritual pursuits</td></tr>
+        <tr><td class="d-code">D24</td><td>ChaturVimsamsa</td><td>Education, learning and knowledge</td></tr>
+        <tr><td class="d-code">D27</td><td>SaptaVimsamsa</td><td>Strengths and weakness of the person</td></tr>
+        <tr><td class="d-code">D30</td><td>Trimsamsa</td><td>Evils, failure, bad luck</td></tr>
+        <tr><td class="d-code">D40</td><td>KhaVedamsa</td><td>Maternal legacy</td></tr>
+        <tr><td class="d-code">D45</td><td>AkshaVedamsa</td><td>Paternal legacy</td></tr>
+        <tr><td class="d-code">D60</td><td>Shastamsa</td><td>Past births, present and future</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<script>
+const SIGNS=['','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const PLANETS=['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'];
+const PNAMES={Su:'Sun',Mo:'Moon',Ma:'Mars',Me:'Mercury',Ju:'Jupiter',Ve:'Venus',Sa:'Saturn',Ra:'Rahu',Ke:'Ketu'};
+const HTITLES=['','H1 — Lagna (Ascendant)','H2','H3','H4','H5','H6','H7','H8','H9','H10','H11','H12'];
+const chartAreas={D1:'Body, physical matters and all about self',D2:'Wealth and family life',D3:'Siblings, study',D4:'Home life and property',D7:'Children / progeny',D9:'Wife, dharma and life rewards',D10:'All about career and profession',D12:'Parents and all about them',D16:'Vehicles, travelling and other comforts',D20:'Spiritual pursuits',D24:'Education, learning and knowledge',D27:'Strengths and weakness of the person',D30:'Evils, failure, bad luck',D40:'Maternal legacy',D45:'Paternal legacy',D60:'Past births, present and future'};
+
+let selectedGender='male', selectedChart='D1';
+let pCounts={};
+
+function setGender(btn){
+  selectedGender=btn.dataset.g;
+  document.querySelectorAll('.toggle-btn[data-g]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setChart(btn){
+  selectedChart=btn.dataset.c;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function planetOptions(){
+  return '<option value="">— none —</option>'+PLANETS.map(p=>`<option value="${p}">${p} – ${PNAMES[p]}</option>`).join('');
+}
+function signOptions(){
+  return '<option value="">— select —</option>'+SIGNS.slice(1).map((s,i)=>`<option value="${i+1}">${i+1} – ${s}</option>`).join('');
+}
+
+function makePlanetEntry(h, idx, removable){
+  return `<div class="planet-entry" id="pe-${h}-${idx}">
+    <span class="p-label">Rashi</span>
+    <select class="pe-rashi" onchange="updatePreview(${h})">${signOptions()}</select>
+    <span class="p-label">Planet</span>
+    <select class="pe-planet" onchange="updatePreview(${h})">${planetOptions()}</select>
+    <span class="p-label" style="min-width:28px;">Deg</span>
+    <input class="pe-deg" type="number" min="0" max="30" placeholder="0–30" oninput="updatePreview(${h})"/>
+    <label class="retro-wrap"><input type="checkbox" class="pe-retro" onchange="updatePreview(${h})"/> Retrograde (R)</label>
+    ${removable?`<button class="rm-btn" onclick="removePlanet(this,${h})" title="Remove">×</button>`:''}
+  </div>`;
+}
+
+function buildHouses(){
+  const grid=document.getElementById('houses-grid');
+  grid.innerHTML='';
+  // Md info banner
+  const info=document.createElement('div');
+  info.style.cssText='font-size:12px;color:var(--text-muted);background:#faf9f6;border:0.5px solid var(--border);border-radius:9px;padding:9px 13px;margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+  info.innerHTML='<span style="font-size:15px;">ℹ️</span> If a house contains <strong>Md</strong> (Mandi/Gulika), ignore it — do not enter it as a planet. If no planet is present in a house, simply leave it empty.';
+  grid.appendChild(info);
+
+  for(let h=1;h<=12;h++){
+    pCounts[h]=1;
+    const isL=h===1;
+    const div=document.createElement('div');
+    div.className='house-row';
+    div.id=`hr-${h}`;
+
+    // H1 gets ascendant fields on top + same planet list below
+    const lagnaTop = isL ? `<div class="lagna-fields" style="margin-bottom:12px;padding-bottom:12px;border-bottom:0.5px solid var(--border);">
+      <label>Rashi no.</label>
+      <select id="l-rashi" onchange="updatePreview(1)">${signOptions()}</select>
+      <label style="margin-left:6px;">Asc Degree</label>
+      <input type="number" id="l-deg" min="0" max="30" placeholder="0–30" oninput="updatePreview(1)"/>
+    </div>` : '';
+
+    const body=`${lagnaTop}<div class="planet-list" id="pl-${h}">${makePlanetEntry(h,0,false)}</div>
+    <button class="add-btn" onclick="addPlanet(${h})">+ Add Entry</button>`;
+
+    div.innerHTML=`
+      <div class="house-header" onclick="toggleHouse(${h})">
+        <div class="house-badge${isL?' lagna':''}">${isL?'H1':'H'+h}</div>
+        <div class="house-title">${HTITLES[h]}</div>
+        <div class="house-preview" id="prev-${h}">${isL?'not set':'empty'}</div>
+        <div class="chevron${isL?' open':''}" id="chev-${h}">▶</div>
+      </div>
+      <div class="house-body${isL?' open':''}" id="hb-${h}">${body}</div>`;
+    grid.appendChild(div);
+  }
+}
+
+function addPlanet(h){
+  const idx=pCounts[h]++;
+  const list=document.getElementById(`pl-${h}`);
+  const d=document.createElement('div');
+  d.innerHTML=makePlanetEntry(h,idx,true);
+  list.appendChild(d.firstElementChild);
+  updatePreview(h);
+}
+function removePlanet(btn,h){
+  btn.closest('.planet-entry').remove();
+  updatePreview(h);
+}
+
+function toggleHouse(h){
+  document.getElementById(`hb-${h}`).classList.toggle('open');
+  document.getElementById(`chev-${h}`).classList.toggle('open');
+}
+
+function updatePreview(h){
+  const el=document.getElementById(`prev-${h}`);
+  if(!el) return;
+  if(h===1){
+    const r=document.getElementById('l-rashi')?.value;
+    const d=document.getElementById('l-deg')?.value;
+    const ascStr=r?(SIGNS[parseInt(r)]+(d?' · '+d+'°':'')):'not set';
+    const entries=document.querySelectorAll(`#pl-1 .planet-entry`);
+    const pParts=[];
+    entries.forEach(e=>{
+      const p=e.querySelector('.pe-planet')?.value;
+      const deg=e.querySelector('.pe-deg')?.value;
+      const retro=e.querySelector('.pe-retro')?.checked;
+      if(p) pParts.push(p+(retro?'(R)':'')+' '+deg+'°');
+    });
+    el.textContent=pParts.length?ascStr+' · '+pParts.join(', '):ascStr;
+  } else {
+    const entries=document.querySelectorAll(`#pl-${h} .planet-entry`);
+    const parts=[];
+    entries.forEach(e=>{
+      const p=e.querySelector('.pe-planet')?.value;
+      const d=e.querySelector('.pe-deg')?.value;
+      const r=e.querySelector('.pe-retro')?.checked;
+      if(p) parts.push(p+(r?'(R)':'')+' '+d+'°');
+    });
+    el.textContent=parts.length?parts.join(', '):'empty';
+  }
+}
+
+function getHousePlanets(h){
+  const entries=document.querySelectorAll(`#pl-${h} .planet-entry`);
+  const planets=[];
+  let houseRashi=null;
+  entries.forEach(e=>{
+    const p=e.querySelector('.pe-planet')?.value;
+    const d=e.querySelector('.pe-deg')?.value||'';
+    const r=e.querySelector('.pe-retro')?.checked;
+    const rashi=e.querySelector('.pe-rashi')?.value;
+    if(p){
+      if(!houseRashi && rashi) houseRashi=parseInt(rashi);
+      planets.push({name:PNAMES[p],deg:d,retro:r});
+    }
+  });
+  return {planets, houseRashi};
+}
+
+function getLagnaRashi(){
+  const v=document.getElementById('l-rashi')?.value;
+  return v?parseInt(v):null;
+}
+function getSignForHouse(h,lagnaRashi){
+  return ((lagnaRashi-1+h-1)%12)+1;
+}
+
+function generateOutput(){
+  const name=document.getElementById('name-input').value.trim()||'Unknown';
+  const lagnaRashi=getLagnaRashi();
+  const lagnaDeg=document.getElementById('l-deg')?.value||'?';
+  if(!lagnaRashi){
+    alert('Please fill in H1 (Lagna) — select the Rashi number and enter the ascendant degree.');
+    if(!document.getElementById('hb-1').classList.contains('open')) toggleHouse(1);
+    return;
+  }
+
+  // Build H1 ascendant string, then append any H1 planets
+  let h1Str=`${SIGNS[lagnaRashi]} ascendant ${lagnaDeg} deg`;
+  const {planets:h1Planets}=getHousePlanets(1);
+  if(h1Planets.length){
+    const pStr=h1Planets.map(p=>p.name+(p.retro?' (Retrograde)':'')+' '+p.deg+' deg').join(' and ');
+    h1Str+=`, ${pStr} in 1H ${SIGNS[lagnaRashi]}`;
+  }
+
+  const parts=[h1Str];
+  for(let h=2;h<=12;h++){
+    const {planets,houseRashi}=getHousePlanets(h);
+    if(!planets.length) continue;
+    const rashiNum=houseRashi||getSignForHouse(h,lagnaRashi);
+    const sign=SIGNS[rashiNum];
+    const pStr=planets.map(p=>p.name+(p.retro?' (Retrograde)':'')+' '+p.deg+' deg').join(' and ');
+    parts.push(`${pStr} in ${h}H ${sign}`);
+  }
+  const out=`${selectedChart} for ${name} (${selectedGender}): ${parts.join(', ')}`;
+  document.getElementById('result-card').style.display='block';
+  document.getElementById('result-title').textContent=`${selectedChart} · ${name}`;
+  document.getElementById('result-text').textContent=out;
+  document.getElementById('chart-ref').textContent=chartAreas[selectedChart]?`Area of influence: ${chartAreas[selectedChart]}`:'';
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function copyResult(){
+  const text=document.getElementById('result-text').textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      const b=document.querySelector('.copy-btn');
+      const o=b.textContent; b.textContent='Copied!';
+      setTimeout(()=>b.textContent=o,1800);
+    }).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); document.body.removeChild(ta);
+  const b=document.querySelector('.copy-btn');
+  const o=b.textContent; b.textContent='Copied!';
+  setTimeout(()=>b.textContent=o,1800);
+}
+
+function toggleRef(){
+  document.getElementById('ref-toggle').classList.toggle('open');
+  document.getElementById('ref-wrap').classList.toggle('open');
+}
+
+buildHouses();
+</script>
+</body>
+</html>
