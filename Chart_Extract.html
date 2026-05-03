@@ -116,7 +116,6 @@ select:focus{border-color:var(--purple);}
   </div>
 
   <!-- Person details -->
-  <img src="Example_guide.png" alt="Example Guide" style="width:100%; max-width:600px; margin-bottom:1rem;">
   <div class="card">
     <div class="section-label">Person details</div>
     <div class="row-2">
@@ -156,6 +155,7 @@ select:focus{border-color:var(--purple);}
   </div>
 
   <!-- House data entry -->
+  <img src="Example_guide.png" alt="Example Guide" style="width:100%; max-width:600px; margin-bottom:1rem;">
   <div class="card">
     <div class="section-label">Enter chart data — click each house to expand</div>
     <div class="houses-grid" id="houses-grid"></div>
@@ -312,13 +312,13 @@ function updatePreview(h){
   if(!el) return;
   if(h===1){
     const r=document.getElementById('l-rashi')?.value;
-    const d=document.getElementById('l-deg')?.value;
+    const d=document.getElementById('l-deg')?.value || '0';
     const ascStr=r?(SIGNS[parseInt(r)]+(d?' · '+d+'°':'')):'not set';
     const entries=document.querySelectorAll(`#pl-1 .planet-entry`);
     const pParts=[];
     entries.forEach(e=>{
       const p=e.querySelector('.pe-planet')?.value;
-      const deg=e.querySelector('.pe-deg')?.value;
+      const deg=e.querySelector('.pe-deg')?.value || '0';
       const retro=e.querySelector('.pe-retro')?.checked;
       if(p) pParts.push(p+(retro?'(R)':'')+' '+deg+'°');
     });
@@ -328,7 +328,7 @@ function updatePreview(h){
     const parts=[];
     entries.forEach(e=>{
       const p=e.querySelector('.pe-planet')?.value;
-      const d=e.querySelector('.pe-deg')?.value;
+      const d=e.querySelector('.pe-deg')?.value || '0';
       const r=e.querySelector('.pe-retro')?.checked;
       if(p) parts.push(p+(r?'(R)':'')+' '+d+'°');
     });
@@ -342,7 +342,7 @@ function getHousePlanets(h){
   let houseRashi=null;
   entries.forEach(e=>{
     const p=e.querySelector('.pe-planet')?.value;
-    const d=e.querySelector('.pe-deg')?.value||'';
+    const d=e.querySelector('.pe-deg')?.value || '0';
     const r=e.querySelector('.pe-retro')?.checked;
     const rashi=e.querySelector('.pe-rashi')?.value;
     if(p){
@@ -364,7 +364,7 @@ function getSignForHouse(h,lagnaRashi){
 function generateOutput(){
   const name=document.getElementById('name-input').value.trim()||'Unknown';
   const lagnaRashi=getLagnaRashi();
-  const lagnaDeg=document.getElementById('l-deg')?.value||'?';
+  const lagnaDeg=document.getElementById('l-deg')?.value || '0';
   if(!lagnaRashi){
     alert('Please fill in H1 (Lagna) — select the Rashi number and enter the ascendant degree.');
     if(!document.getElementById('hb-1').classList.contains('open')) toggleHouse(1);
