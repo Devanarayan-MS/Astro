@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vedic Chart Extractor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f7f5f0;--surface:#fff;--border:#e2ddd6;--border-strong:#c8c0b5;
+  --text:#1a1714;--text-muted:#6b6460;--text-hint:#a09890;
+  --purple-dark:#26215C;--purple-mid:#3C3489;--purple:#534AB7;
+  --purple-light:#EEEDFE;--purple-text:#3C3489;
+  --red-bg:#FCEBEB;--red-text:#791F1F;--red-border:#F7C1C1;
+}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;}
+.page-wrap{max-width:640px;margin:0 auto;padding:2rem 1.25rem 4rem;}
+
+.header{text-align:center;margin-bottom:2rem;}
+.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-hint);margin-bottom:6px;}
+h1{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:400;line-height:1.15;}
+h1 em{color:var(--purple);font-style:italic;}
+.rule{width:36px;height:1px;background:var(--border-strong);margin:12px auto 10px;}
+.header-sub{font-size:13px;color:var(--text-muted);}
+
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.4rem 1.5rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.section-label{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-hint);margin-bottom:1rem;}
+
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);}
+input[type=text]{height:40px;padding:0 12px;border:0.5px solid var(--border-strong);border-radius:9px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;}
+input[type=text]:focus{border-color:var(--purple);background:#fff;}
+
+.gender-row{display:flex;gap:8px;}
+.toggle-btn{flex:1;height:40px;border:0.5px solid var(--border-strong);background:var(--bg);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.toggle-btn.active{border-color:var(--purple);background:var(--purple-light);color:var(--purple-text);font-weight:500;}
+
+.chart-grid{display:flex;flex-wrap:wrap;gap:7px;}
+.type-btn{padding:6px 13px;border:0.5px solid var(--border-strong);border-radius:20px;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.type-btn.active{border-color:var(--purple);background:var(--purple-light);color:var(--purple-text);font-weight:500;}
+
+/* Upload */
+.upload-zone{border:1.5px dashed var(--border-strong);border-radius:12px;padding:2rem 1rem;text-align:center;cursor:pointer;position:relative;transition:all .2s;background:var(--bg);}
+.upload-zone:hover{border-color:var(--purple);background:var(--purple-light);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{margin:0 auto 10px;color:var(--text-hint);}
+.upload-text{font-size:14px;color:var(--text-muted);}
+.upload-hint{font-size:11px;color:var(--text-hint);margin-top:5px;}
+.preview-wrap{margin-top:14px;text-align:center;}
+.preview-img{max-width:100%;max-height:280px;border-radius:10px;border:0.5px solid var(--border);object-fit:contain;}
+.preview-name{font-size:11px;color:var(--text-hint);margin-top:6px;}
+
+/* Reference grid */
+.ref-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border-strong);border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;font-size:11px;text-align:center;}
+.ref-cell{background:var(--bg);padding:8px 4px;color:var(--text-muted);line-height:1.4;}
+.ref-cell.sign{font-weight:500;color:var(--purple-text);}
+.ref-cell.empty{background:#f0ede8;}
+.ref-caption{font-size:11px;color:var(--text-hint);margin-top:8px;text-align:center;font-style:italic;}
+
+/* Extract button */
+.extract-btn{width:100%;height:50px;background:var(--purple-dark);color:var(--purple-light);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;letter-spacing:.06em;cursor:pointer;transition:all .2s;margin-top:.75rem;display:flex;align-items:center;justify-content:center;gap:8px;}
+.extract-btn:hover:not(:disabled){background:var(--purple-mid);}
+.extract-btn:disabled{background:var(--border);color:var(--text-hint);cursor:not-allowed;}
+
+/* Loading */
+.loading{display:none;text-align:center;padding:2.5rem 1rem;}
+.spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:var(--text-muted);}
+
+/* Error */
+.error-box{display:none;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red-border);border-radius:10px;padding:13px 16px;font-size:13px;margin-top:1rem;line-height:1.5;}
+
+/* Result */
+.result-card{display:none;background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-top:1rem;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.result-header{background:var(--purple-dark);padding:1rem 1.4rem;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.result-meta{display:flex;flex-direction:column;gap:3px;}
+.r-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#AFA9EC;}
+.r-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#CECBF6;font-style:italic;}
+.copy-btn{padding:6px 14px;background:transparent;border:0.5px solid #534AB7;border-radius:8px;color:#AFA9EC;font-size:11px;letter-spacing:.07em;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.copy-btn:hover{background:var(--purple-mid);color:var(--purple-light);}
+.result-body{padding:1.4rem 1.5rem;}
+.result-text{font-family:'Cormorant Garamond',serif;font-size:1.1rem;line-height:2;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.chart-ref{margin-top:1rem;padding-top:1rem;border-top:0.5px solid var(--border);font-size:12px;color:var(--text-hint);font-style:italic;}
+
+/* Ref table toggle */
+.ref-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-hint);letter-spacing:.05em;margin-top:1.5rem;user-select:none;}
+.ref-toggle svg{transition:transform .2s;flex-shrink:0;}
+.ref-toggle.open svg{transform:rotate(90deg);}
+.ref-wrap{display:none;margin-top:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.ref-wrap.open{display:block;}
+.ref-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ref-table th{background:var(--purple-dark);color:#CECBF6;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding:9px 14px;text-align:left;}
+.ref-table td{padding:8px 14px;border-bottom:0.5px solid var(--border);color:var(--text-muted);}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:nth-child(even) td{background:var(--bg);}
+.d-code{font-weight:500;color:var(--purple-text);font-size:11px;}
+
+@media(max-width:500px){
+  .row-2{grid-template-columns:1fr;}
+  h1{font-size:1.8rem;}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="eyebrow">Vedic Astrology Tool</div>
+    <h1>Chart <em>Extractor</em></h1>
+    <div class="rule"></div>
+    <div class="header-sub">Upload a South Indian chart image · get clean text extraction</div>
+  </div>
+
+  <!-- Person details -->
+  <div class="card">
+    <div class="section-label">Person details</div>
+    <div class="row-2">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="name-input" placeholder="e.g. Your Name"/>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <div class="gender-row">
+          <button class="toggle-btn active" data-g="male" onclick="setGender(this)">Male</button>
+          <button class="toggle-btn" data-g="female" onclick="setGender(this)">Female</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Chart / Varga</label>
+      <div class="chart-grid">
+        <button class="type-btn active" data-c="D1" onclick="setChart(this)">D1 – Rashi</button>
+        <button class="type-btn" data-c="D2" onclick="setChart(this)">D2 – Hora</button>
+        <button class="type-btn" data-c="D3" onclick="setChart(this)">D3 – Dreshkana</button>
+        <button class="type-btn" data-c="D4" onclick="setChart(this)">D4 – Chaturthamsa</button>
+        <button class="type-btn" data-c="D7" onclick="setChart(this)">D7 – Saptamsa</button>
+        <button class="type-btn" data-c="D9" onclick="setChart(this)">D9 – Navamsa</button>
+        <button class="type-btn" data-c="D10" onclick="setChart(this)">D10 – Dasamsa</button>
+        <button class="type-btn" data-c="D12" onclick="setChart(this)">D12 – Dvadasamsa</button>
+        <button class="type-btn" data-c="D16" onclick="setChart(this)">D16 – Shodasamsa</button>
+        <button class="type-btn" data-c="D20" onclick="setChart(this)">D20 – Vimsamsa</button>
+        <button class="type-btn" data-c="D24" onclick="setChart(this)">D24 – ChaturVimsamsa</button>
+        <button class="type-btn" data-c="D27" onclick="setChart(this)">D27 – SaptaVimsamsa</button>
+        <button class="type-btn" data-c="D30" onclick="setChart(this)">D30 – Trimsamsa</button>
+        <button class="type-btn" data-c="D40" onclick="setChart(this)">D40 – KhaVedamsa</button>
+        <button class="type-btn" data-c="D45" onclick="setChart(this)">D45 – AkshaVedamsa</button>
+        <button class="type-btn" data-c="D60" onclick="setChart(this)">D60 – Shastamsa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="section-label">Upload South Indian chart image</div>
+
+    <!-- Fixed sign reference -->
+    <div style="margin-bottom:14px;">
+      <div class="ref-grid">
+        <div class="ref-cell sign">Pisces</div>
+        <div class="ref-cell sign">Aries</div>
+        <div class="ref-cell sign">Taurus</div>
+        <div class="ref-cell sign">Gemini</div>
+        <div class="ref-cell sign">Aquarius</div>
+        <div class="ref-cell empty"></div>
+        <div class="ref-cell empty"></div>
+        <div class="ref-cell sign">Cancer</div>
+        <div class="ref-cell sign">Capricorn</div>
+        <div class="ref-cell empty"></div>
+        <div class="ref-cell empty"></div>
+        <div class="ref-cell sign">Leo</div>
+        <div class="ref-cell sign">Sagittarius</div>
+        <div class="ref-cell sign">Scorpio</div>
+        <div class="ref-cell sign">Libra</div>
+        <div class="ref-cell sign">Virgo</div>
+      </div>
+      <div class="ref-caption">Signs are always fixed · "As" marks H1 · houses count clockwise · Md is ignored</div>
+    </div>
+
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)"/>
+      <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9l4-4 4 4 4-6 4 6"/>
+        <line x1="12" y1="17" x2="12" y2="13"/>
+        <polyline points="9 15 12 12 15 15"/>
+      </svg>
+      <div class="upload-text">Click to upload chart image</div>
+      <div class="upload-hint">South Indian 4×4 grid · PNG or JPG</div>
+    </div>
+    <div class="preview-wrap" id="preview-wrap"></div>
+  </div>
+
+  <button class="extract-btn" id="extract-btn" onclick="extractChart()" disabled>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Extract Chart
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-label">Reading planetary positions…</div>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="result-meta">
+        <div class="r-eyebrow">Extraction complete</div>
+        <div class="r-title" id="result-title">Chart</div>
+      </div>
+      <button class="copy-btn" onclick="copyResult()">Copy text</button>
+    </div>
+    <div class="result-body">
+      <div class="result-text" id="result-text"></div>
+      <div class="chart-ref" id="chart-ref"></div>
+    </div>
+  </div>
+
+  <div class="ref-toggle" id="ref-toggle" onclick="toggleRef()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    Divisional chart reference
+  </div>
+  <div class="ref-wrap" id="ref-wrap">
+    <table class="ref-table">
+      <thead><tr><th>Chart</th><th>Hindi name</th><th>Area of influence</th></tr></thead>
+      <tbody>
+        <tr><td class="d-code">D1</td><td>Rasi</td><td>Body, physical matters and all about self</td></tr>
+        <tr><td class="d-code">D2</td><td>Hora</td><td>Wealth and family life</td></tr>
+        <tr><td class="d-code">D3</td><td>Dreshkana</td><td>Siblings, study</td></tr>
+        <tr><td class="d-code">D4</td><td>Chaturthamsa</td><td>Home life and property</td></tr>
+        <tr><td class="d-code">D7</td><td>Saptamsa</td><td>Children / progeny</td></tr>
+        <tr><td class="d-code">D9</td><td>Navamsa</td><td>Wife, dharma and life rewards</td></tr>
+        <tr><td class="d-code">D10</td><td>Dasamsa</td><td>All about career and profession</td></tr>
+        <tr><td class="d-code">D12</td><td>Dvadasamsa</td><td>Parents and all about them</td></tr>
+        <tr><td class="d-code">D16</td><td>Shodasamsa</td><td>Vehicles, travelling and other comforts</td></tr>
+        <tr><td class="d-code">D20</td><td>Vimsamsa</td><td>Spiritual pursuits</td></tr>
+        <tr><td class="d-code">D24</td><td>ChaturVimsamsa</td><td>Education, learning and knowledge</td></tr>
+        <tr><td class="d-code">D27</td><td>SaptaVimsamsa</td><td>Strengths and weakness of the person</td></tr>
+        <tr><td class="d-code">D30</td><td>Trimsamsa</td><td>Evils, failure, bad luck</td></tr>
+        <tr><td class="d-code">D40</td><td>KhaVedamsa</td><td>Maternal legacy</td></tr>
+        <tr><td class="d-code">D45</td><td>AkshaVedamsa</td><td>Paternal legacy</td></tr>
+        <tr><td class="d-code">D60</td><td>Shastamsa</td><td>Past births, present and future</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<script>
+const chartAreas={D1:'Body, physical matters and all about self',D2:'Wealth and family life',D3:'Siblings, study',D4:'Home life and property',D7:'Children / progeny',D9:'Wife, dharma and life rewards',D10:'All about career and profession',D12:'Parents and all about them',D16:'Vehicles, travelling and other comforts',D20:'Spiritual pursuits',D24:'Education, learning and knowledge',D27:'Strengths and weakness of the person',D30:'Evils, failure, bad luck',D40:'Maternal legacy',D45:'Paternal legacy',D60:'Past births, present and future'};
+
+let selectedGender='male', selectedChart='D1';
+let imageB64=null, imageMime='image/jpeg';
+
+function setGender(btn){
+  selectedGender=btn.dataset.g;
+  document.querySelectorAll('.toggle-btn[data-g]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setChart(btn){
+  selectedChart=btn.dataset.c;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function handleFile(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  imageMime=file.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    imageB64=ev.target.result.split(',')[1];
+    document.getElementById('preview-wrap').innerHTML=
+      `<img class="preview-img" src="${ev.target.result}" alt="Chart preview"/>
+       <div class="preview-name">${file.name}</div>`;
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+}
+function checkReady(){
+  const name=document.getElementById('name-input').value.trim();
+  document.getElementById('extract-btn').disabled=!(name&&imageB64);
+}
+document.getElementById('name-input').addEventListener('input',checkReady);
+
+async function extractChart(){
+  const name=document.getElementById('name-input').value.trim();
+  if(!name||!imageB64) return;
+
+  document.getElementById('loading').style.display='block';
+  document.getElementById('extract-btn').disabled=true;
+  document.getElementById('result-card').style.display='none';
+  document.getElementById('error-box').style.display='none';
+
+  const system=`You are an expert Vedic astrology chart reader specialising in the South Indian chart style.
+
+=== SOUTH INDIAN CHART LAYOUT ===
+The South Indian chart is a fixed 4×4 grid where each cell always represents the same zodiac sign, regardless of the chart:
+
+Row 1 (top):    Pisces  | Aries  | Taurus  | Gemini
+Row 2:          Aquarius| (empty)| (empty) | Cancer
+Row 3:          Capricorn|(empty)| (empty) | Leo
+Row 4 (bottom): Sagittarius|Scorpio|Libra  | Virgo
+
+The 4 inner cells (rows 2-3, cols 2-3) are always empty — they form the hollow center of the chart.
+
+=== HOW TO READ THE CHART ===
+1. FIND THE ASCENDANT: Look for "As" followed by a degree (format: deg:min, e.g. "As 17:29"). The cell containing "As" is the ascendant sign — that is House 1 (H1).
+2. COUNT CLOCKWISE: Starting from H1, count clockwise around the perimeter cells to assign house numbers H1 through H12.
+   - Clockwise order of cells: Pisces→Aries→Taurus→Gemini→Cancer→Leo→Virgo→Libra→Scorpio→Sagittarius→Capricorn→Aquarius→(back to Pisces)
+   - So if As is in Aries: H1=Aries, H2=Taurus, H3=Gemini, H4=Cancer, H5=Leo, H6=Virgo, H7=Libra, H8=Scorpio, H9=Sagittarius, H10=Capricorn, H11=Aquarius, H12=Pisces
+3. READ PLANETS: For each cell, read all planet abbreviations and their degrees. Degrees are in deg:min format (e.g. "Su 19:38" = Sun 19°38').
+4. IGNORE Md (Mandi/Gulika) entirely — do not include in output.
+5. Skip empty houses.
+
+=== PLANET ABBREVIATIONS ===
+Su=Sun, Mo=Moon, Ma=Mars, Me=Mercury, Ju=Jupiter, Ve=Venus, Sa=Saturn, Ra=Rahu, Ke=Ketu
+(R) after a planet = Retrograde, e.g. Ra(R) = Rahu (Retrograde)
+(C) after a planet = Combust, e.g. Su(C) = Sun (Combust)
+A planet can be both: Su(R)(C) = Sun (Retrograde) (Combust)
+
+=== OUTPUT FORMAT (follow exactly, single line, no extra text) ===
+[Chart] for [Name] ([gender]): [Sign] ascendant [deg]°[min]', [Planet] [deg]°[min]' [and Planet [deg]°[min]'] in [H]H [Sign], ...
+
+Example — As in Aries (H1):
+D3 for Dev (male): Aries ascendant 17°29', Sun 19°38' and Jupiter 22°04' and Saturn 0°39' in 2H Taurus, Mars 23°13' in 3H Gemini, Moon 27°12' in 4H Cancer, Ketu (Retrograde) 0°48' in 5H Leo, Mercury 14°23' and Rahu (Retrograde) 0°48' in 11H Aquarius, Venus 8°56' in 12H Pisces
+
+CRITICAL OUTPUT RULES:
+- Output ONLY the single extraction line starting with the chart name e.g. "D3 for..."
+- NO markdown, NO bullet points, NO grid reading steps, NO house assignment explanations
+- NO asterisks, NO bold, NO headers, NO intermediate working
+- Just the final line and nothing else. If you need to think, do it silently.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:imageMime,data:imageB64}},
+            {type:'text',text:`Extract the ${selectedChart} chart for ${name} (${selectedGender}) from this South Indian chart image. Follow all rules exactly.`}
+          ]
+        }]
+      })
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error?.message||'API error '+res.status);
+    const raw=(data.content?.find(b=>b.type==='text')?.text||'').trim();
+    // Strip any preamble — only keep the line starting with the chart code
+    const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+    const chartLine=lines.find(l=>/^D\d+\s+for\s+/i.test(l))||raw;
+    const text=chartLine.trim();
+    document.getElementById('loading').style.display='none';
+    document.getElementById('result-card').style.display='block';
+    document.getElementById('result-title').textContent=`${selectedChart} · ${name}`;
+    document.getElementById('result-text').textContent=text;
+    document.getElementById('chart-ref').textContent=chartAreas[selectedChart]?`Area of influence: ${chartAreas[selectedChart]}`:'';
+    document.getElementById('extract-btn').disabled=false;
+    checkReady();
+    document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('extract-btn').disabled=false;
+    checkReady();
+    const el=document.getElementById('error-box');
+    el.style.display='block';
+    el.textContent='Extraction failed: '+(err.message||'Unknown error. Please try again.');
+  }
+}
+
+function copyResult(){
+  const text=document.getElementById('result-text').textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>flashCopy()).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;opacity:0;';
+  document.body.appendChild(ta);ta.select();
+  document.execCommand('copy');document.body.removeChild(ta);
+  flashCopy();
+}
+function flashCopy(){
+  const b=document.querySelector('.copy-btn');
+  const o=b.textContent;b.textContent='Copied!';
+  setTimeout(()=>b.textContent=o,1800);
+}
+function toggleRef(){
+  document.getElementById('ref-toggle').classList.toggle('open');
+  document.getElementById('ref-wrap').classList.toggle('open');
+}
+</script>
+</body>
+</html>
